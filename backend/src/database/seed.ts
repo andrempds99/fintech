@@ -15,10 +15,14 @@ async function seedDatabase() {
     console.log('Starting database seed...');
 
     // Clear existing data (in reverse order of dependencies)
+    // Delete from tables with foreign keys first
+    await client.query('DELETE FROM scheduled_transfers');
+    await client.query('DELETE FROM alerts');
+    await client.query('DELETE FROM goals');
     await client.query('DELETE FROM transactions');
     await client.query('DELETE FROM accounts');
-    await client.query('DELETE FROM users');
     await client.query('DELETE FROM audit_logs');
+    await client.query('DELETE FROM users');
 
     console.log('Cleared existing data');
 
@@ -27,6 +31,11 @@ async function seedDatabase() {
     const adminResult = await client.query(
       `INSERT INTO users (email, password_hash, name, role, avatar)
        VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (email) DO UPDATE SET
+         password_hash = EXCLUDED.password_hash,
+         name = EXCLUDED.name,
+         role = EXCLUDED.role,
+         avatar = EXCLUDED.avatar
        RETURNING id, email, name, role, avatar`,
       [adminUser.email, adminUser.passwordHash, adminUser.name, adminUser.role, adminUser.avatar]
     );
@@ -35,15 +44,36 @@ async function seedDatabase() {
 
     // Create regular users
     const users = [];
+    const usedEmails = new Set<string>();
+    usedEmails.add(adminUser.email); // Track admin email to avoid duplicates
+    
     for (let i = 0; i < 4; i++) {
-      const user = await generateUser('user');
+      let user;
+      let attempts = 0;
+      // Generate unique email (retry if duplicate)
+      do {
+        user = await generateUser('user');
+        attempts++;
+        if (attempts > 10) {
+          // Fallback: add timestamp to ensure uniqueness
+          const timestamp = Date.now();
+          user.email = user.email.replace('@', `+${timestamp}@`);
+        }
+      } while (usedEmails.has(user.email) && attempts <= 10);
+      
+      usedEmails.add(user.email);
+      
       const result = await client.query(
         `INSERT INTO users (email, password_hash, name, role, avatar)
          VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (email) DO NOTHING
          RETURNING id, email, name, role, avatar`,
         [user.email, user.passwordHash, user.name, user.role, user.avatar]
       );
-      users.push({ ...result.rows[0], password: 'password123' });
+      
+      if (result.rows.length > 0) {
+        users.push({ ...result.rows[0], password: 'password123' });
+      }
     }
     console.log(`Created ${users.length} regular users`);
 
