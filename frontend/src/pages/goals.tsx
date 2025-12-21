@@ -229,11 +229,11 @@ export function GoalsPage() {
       </div>
 
       {/* Financial Goals Progress */}
-      {activeGoals.length > 0 && (
-        <Card className="p-6 rounded-xl shadow-sm border border-border">
-          <h3 className="mb-6">Financial Goals Progress</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {activeGoals.slice(0, 3).map((goal) => {
+      <Card className="p-6 rounded-xl shadow-sm border border-border">
+        <h3 className="mb-6">Financial Goals Progress</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {activeGoals.length > 0 ? (
+            activeGoals.slice(0, 3).map((goal) => {
               const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
               const isCompleted = goal.currentAmount >= goal.targetAmount;
               const isOnTrack = progress >= 75;
@@ -277,10 +277,31 @@ export function GoalsPage() {
                   </div>
                 </div>
               );
-            })}
-          </div>
-        </Card>
-      )}
+            })
+          ) : (
+            <>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p>No goals yet</p>
+                  <Badge className="bg-[var(--info)] text-white">Active</Badge>
+                </div>
+                <div className="mb-2">
+                  <p className="text-2xl">$0.00</p>
+                  <p className="text-sm text-muted-foreground">Create your first goal</p>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-[var(--info)] rounded-full transition-all"
+                    style={{ width: '0%' }}
+                  />
+                </div>
+              </div>
+              <div></div>
+              <div></div>
+            </>
+          )}
+        </div>
+      </Card>
 
       {/* Create/Edit Goal Dialog */}
       <Dialog 

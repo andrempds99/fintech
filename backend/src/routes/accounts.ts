@@ -26,5 +26,15 @@ router.post(
   accountsController.create.bind(accountsController)
 );
 
+router.delete('/:id', accountsController.delete.bind(accountsController));
+
+router.patch(
+  '/:id/highlight',
+  validate([
+    body('isHighlighted').isBoolean(),
+  ]),
+  accountsController.setHighlight.bind(accountsController)
+);
+
 export default router;
 

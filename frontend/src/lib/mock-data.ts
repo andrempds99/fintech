@@ -11,6 +11,7 @@ export interface Account {
   status: AccountStatus;
   accountNumber: string;
   limit?: number;
+  isHighlighted?: boolean;
 }
 
 export interface Transaction {

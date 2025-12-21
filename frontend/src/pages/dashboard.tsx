@@ -59,10 +59,11 @@ export function DashboardPage({ onPageChange }: DashboardPageProps) {
       setAccounts(accountsData || []);
       setTransactions(transactionsData?.transactions || []);
       setBalanceTrend(balanceTrendData || []);
-      setSpendingByCategory((spendingData || []).map((s: any) => ({
+      const chartColors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
+      setSpendingByCategory((spendingData || []).map((s: any, index: number) => ({
         category: s.category,
-        amount: s.amount,
-        fill: `var(--chart-${Math.floor(Math.random() * 5) + 1})`,
+        amount: parseFloat(s.amount || 0),
+        fill: chartColors[index % chartColors.length],
       })));
       setSummary(summaryData || {
         totalBalance: 0,
@@ -83,7 +84,7 @@ export function DashboardPage({ onPageChange }: DashboardPageProps) {
   }
 
   const activeAccounts = accounts.filter(acc => acc.status === 'active');
-  const featuredAccount = activeAccounts[0];
+  const featuredAccount = activeAccounts.find(acc => acc.isHighlighted) || activeAccounts[0];
 
   return (
     <div className="space-y-6">
@@ -193,10 +194,10 @@ export function DashboardPage({ onPageChange }: DashboardPageProps) {
         <Card className="p-6 rounded-xl shadow-sm border border-border">
           <h3 className="mb-6">Spending by Category</h3>
           <ResponsiveContainer width="100%" height={280}>
-            {spendingByCategory.length > 0 ? (
+            {spendingByCategory.length > 0 && spendingByCategory.some((s: any) => s.amount > 0) ? (
               <PieChart>
                 <Pie
-                  data={spendingByCategory}
+                  data={spendingByCategory.filter((s: any) => s.amount > 0)}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -205,8 +206,8 @@ export function DashboardPage({ onPageChange }: DashboardPageProps) {
                   fill="#8884d8"
                   dataKey="amount"
                 >
-                  {spendingByCategory.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  {spendingByCategory.filter((s: any) => s.amount > 0).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill || `var(--chart-${(index % 5) + 1})`} />
                   ))}
                 </Pie>
                 <Tooltip 
@@ -215,6 +216,7 @@ export function DashboardPage({ onPageChange }: DashboardPageProps) {
                     border: '1px solid var(--border)',
                     borderRadius: '8px'
                   }}
+                  formatter={(value: any) => `$${parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
                 />
               </PieChart>
             ) : (

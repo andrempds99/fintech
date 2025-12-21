@@ -108,6 +108,55 @@ export class AccountRepository {
     const result = await pool.query('SELECT COUNT(*) FROM accounts');
     return parseInt(result.rows[0].count, 10);
   }
+
+  async delete(id: string, userId: string): Promise<void> {
+    // Verify ownership and balance
+    const account = await this.findById(id);
+    if (!account) {
+      throw new Error('Account not found');
+    }
+    if (account.user_id !== userId) {
+      throw new Error('Access denied');
+    }
+    if (parseFloat(account.balance.toString()) !== 0) {
+      throw new Error('Cannot delete account with non-zero balance');
+    }
+    
+    await pool.query('DELETE FROM accounts WHERE id = $1', [id]);
+  }
+
+  async setHighlight(id: string, userId: string, isHighlighted: boolean): Promise<Account> {
+    // Verify ownership
+    const account = await this.findById(id);
+    if (!account) {
+      throw new Error('Account not found');
+    }
+    if (account.user_id !== userId) {
+      throw new Error('Access denied');
+    }
+
+    // If setting this account as highlighted, unhighlight all other accounts for this user
+    if (isHighlighted) {
+      await pool.query(
+        'UPDATE accounts SET is_highlighted = false, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1',
+        [userId]
+      );
+    }
+
+    const result = await pool.query(
+      'UPDATE accounts SET is_highlighted = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+      [isHighlighted, id]
+    );
+    return result.rows[0];
+  }
+
+  async findHighlighted(userId: string): Promise<Account | null> {
+    const result = await pool.query(
+      'SELECT * FROM accounts WHERE user_id = $1 AND is_highlighted = true LIMIT 1',
+      [userId]
+    );
+    return result.rows[0] || null;
+  }
 }
 
 export default new AccountRepository();

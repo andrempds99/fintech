@@ -64,6 +64,37 @@ export class AccountService {
     const accounts = await accountRepository.findByUserId(userId);
     return accounts.filter(account => account.status === 'active');
   }
+
+  async delete(id: string, userId: string): Promise<void> {
+    const account = await accountRepository.findById(id);
+    if (!account) {
+      throw new AppError('Account not found', 404);
+    }
+    if (account.user_id !== userId) {
+      throw new AppError('Access denied', 403);
+    }
+    if (parseFloat(account.balance.toString()) !== 0) {
+      throw new AppError('Cannot delete account with non-zero balance', 400);
+    }
+    
+    await accountRepository.delete(id, userId);
+  }
+
+  async setHighlight(id: string, userId: string, isHighlighted: boolean): Promise<Account> {
+    const account = await accountRepository.findById(id);
+    if (!account) {
+      throw new AppError('Account not found', 404);
+    }
+    if (account.user_id !== userId) {
+      throw new AppError('Access denied', 403);
+    }
+    
+    return accountRepository.setHighlight(id, userId, isHighlighted);
+  }
+
+  async getHighlightedAccount(userId: string): Promise<Account | null> {
+    return accountRepository.findHighlighted(userId);
+  }
 }
 
 export default new AccountService();

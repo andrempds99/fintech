@@ -1,19 +1,46 @@
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { CreditCard, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { CreditCard, MoreVertical, Trash2, Star } from "lucide-react";
 import type { Account } from "@/lib/mock-data";
 
 interface AccountCardProps {
   account: Account;
   featured?: boolean;
   onClick?: () => void;
+  onDelete?: (accountId: string) => void;
+  onSetHighlight?: (accountId: string, isHighlighted: boolean) => void;
 }
 
-export function AccountCard({ account, featured = false, onClick }: AccountCardProps) {
+export function AccountCard({ account, featured = false, onClick, onDelete, onSetHighlight }: AccountCardProps) {
   const statusColors = {
     active: 'bg-[var(--positive)] text-white',
     suspended: 'bg-[var(--warning)] text-white',
     closed: 'bg-muted text-muted-foreground'
+  };
+
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete && account.balance === 0) {
+      onDelete(account.id);
+    }
+  };
+
+  const handleSetHighlight = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onSetHighlight) {
+      onSetHighlight(account.id, !account.isHighlighted);
+    }
   };
 
   if (featured) {
@@ -55,9 +82,44 @@ export function AccountCard({ account, featured = false, onClick }: AccountCardP
           <h4 className="mb-1">{account.name}</h4>
           <p className="text-muted-foreground text-sm">{account.type}</p>
         </div>
-        <button className="p-1 hover:bg-muted rounded">
-          <MoreVertical className="h-4 w-4 text-muted-foreground" />
-        </button>
+        {(onDelete || onSetHighlight) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={handleMenuClick}>
+              <button 
+                className="p-1 hover:bg-muted rounded"
+                onClick={handleMenuClick}
+              >
+                <MoreVertical className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={handleMenuClick}>
+              {onSetHighlight && (
+                <DropdownMenuItem onClick={handleSetHighlight}>
+                  <Star className="h-4 w-4 mr-2" />
+                  {account.isHighlighted ? 'Remove Highlight' : 'Set as Highlight Account'}
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <>
+                  {onSetHighlight && <DropdownMenuSeparator />}
+                  <DropdownMenuItem 
+                    onClick={handleDelete}
+                    disabled={account.balance !== 0}
+                    variant={account.balance === 0 ? "destructive" : "default"}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Account
+                    {account.balance !== 0 && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (Balance must be $0)
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
       <div>
         <p className="text-2xl mb-2">

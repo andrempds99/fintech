@@ -27,5 +27,14 @@ export const accountService = {
     const response = await apiClient.get<{ accounts: any[] }>('/accounts/active/transfers');
     return (response.data?.accounts || []).map(mapAccount);
   },
+
+  async delete(id: string): Promise<void> {
+    await apiClient.delete(`/accounts/${id}`);
+  },
+
+  async setHighlight(id: string, isHighlighted: boolean): Promise<Account> {
+    const response = await apiClient.patch<any>(`/accounts/${id}/highlight`, { isHighlighted });
+    return mapAccount(response.data);
+  },
 };
 

@@ -14,6 +14,7 @@ export function mapAccount(apiAccount: any): Account {
     status: apiAccount.status || 'active',
     accountNumber: apiAccount.account_number || '',
     limit: apiAccount.limit ? parseFloat(apiAccount.limit) : undefined,
+    isHighlighted: apiAccount.is_highlighted || false,
   };
 }
 

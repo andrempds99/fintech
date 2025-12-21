@@ -83,10 +83,11 @@ export function AccountsPage() {
 
       setAccounts(accountsData || []);
       setBalanceTrend(balanceTrendData || []);
-      setSpendingByCategory((spendingData || []).map((s: any) => ({
+      const chartColors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
+      setSpendingByCategory((spendingData || []).map((s: any, index: number) => ({
         category: s.category,
-        amount: s.amount,
-        fill: `var(--chart-${Math.floor(Math.random() * 5) + 1})`,
+        amount: parseFloat(s.amount || 0),
+        fill: chartColors[index % chartColors.length],
       })));
       setRecentTransactions(transactionsData?.transactions || []);
     } catch (error: any) {
@@ -148,6 +149,32 @@ export function AccountsPage() {
     console.log('[Accounts] handleCloseDialog called');
     setIsDialogOpen(false);
     setFormData({ name: "", type: "", currency: "USD", limit: "" });
+  };
+
+  const handleDeleteAccount = async (accountId: string) => {
+    if (!confirm("Are you sure you want to delete this account? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await accountService.delete(accountId);
+      toast.success("Account deleted successfully");
+      await loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete account");
+      console.error(error);
+    }
+  };
+
+  const handleSetHighlight = async (accountId: string, isHighlighted: boolean) => {
+    try {
+      await accountService.setHighlight(accountId, isHighlighted);
+      toast.success(isHighlighted ? "Account set as highlight" : "Highlight removed");
+      await loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update highlight status");
+      console.error(error);
+    }
   };
 
   if (isLoading) {
@@ -280,17 +307,30 @@ export function AccountsPage() {
       </Dialog>
 
       {/* Featured Account Card */}
-      {activeAccounts.length > 0 && (
-        <AccountCard account={activeAccounts[0]} featured />
-      )}
+      {(() => {
+        const highlightedAccount = activeAccounts.find(acc => acc.isHighlighted) || activeAccounts[0];
+        return highlightedAccount ? (
+          <AccountCard 
+            account={highlightedAccount} 
+            featured 
+            onDelete={handleDeleteAccount}
+            onSetHighlight={handleSetHighlight}
+          />
+        ) : null;
+      })()}
 
       {/* Accounts Grid */}
       {accounts.length > 0 ? (
         <div>
           <h2 className="mb-4">All Accounts</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {accounts.slice(activeAccounts.length > 0 ? 1 : 0).map((account) => (
-              <AccountCard key={account.id} account={account} />
+            {accounts.filter(acc => !acc.isHighlighted || acc.status !== 'active').map((account) => (
+              <AccountCard 
+                key={account.id} 
+                account={account}
+                onDelete={handleDeleteAccount}
+                onSetHighlight={handleSetHighlight}
+              />
             ))}
           </div>
         </div>
@@ -382,10 +422,10 @@ export function AccountsPage() {
           <Card className="p-6 rounded-xl shadow-sm border border-border">
             <h3 className="mb-6">Spending by Category</h3>
             <ResponsiveContainer width="100%" height={280}>
-              {spendingByCategory.length > 0 ? (
+              {spendingByCategory.length > 0 && spendingByCategory.some((s: any) => s.amount > 0) ? (
                 <PieChart>
                   <Pie
-                    data={spendingByCategory}
+                    data={spendingByCategory.filter((s: any) => s.amount > 0)}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -394,8 +434,8 @@ export function AccountsPage() {
                     fill="#8884d8"
                     dataKey="amount"
                   >
-                    {spendingByCategory.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    {spendingByCategory.filter((s: any) => s.amount > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill || `var(--chart-${(index % 5) + 1})`} />
                     ))}
                   </Pie>
                   <Tooltip 
@@ -404,6 +444,7 @@ export function AccountsPage() {
                       border: '1px solid var(--border)',
                       borderRadius: '8px'
                     }}
+                    formatter={(value: any) => `$${parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
                   />
                 </PieChart>
               ) : (

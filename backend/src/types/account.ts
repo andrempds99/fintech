@@ -10,6 +10,7 @@ export interface Account {
   status: AccountStatus;
   account_number: string;
   limit?: number;
+  is_highlighted?: boolean;
   created_at: Date;
   updated_at?: Date;
 }

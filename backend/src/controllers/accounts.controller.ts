@@ -54,6 +54,37 @@ export class AccountsController {
       next(error);
     }
   }
+
+  async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new AppError('Authentication required', 401);
+      }
+
+      await accountService.delete(req.params.id, req.user.userId);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async setHighlight(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new AppError('Authentication required', 401);
+      }
+
+      const { isHighlighted } = req.body;
+      if (typeof isHighlighted !== 'boolean') {
+        throw new AppError('isHighlighted must be a boolean', 400);
+      }
+
+      const account = await accountService.setHighlight(req.params.id, req.user.userId, isHighlighted);
+      res.json(account);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new AccountsController();
