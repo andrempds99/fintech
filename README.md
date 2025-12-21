@@ -150,9 +150,20 @@ fintech/
 
 - User authentication and authorization
 - Account management
+  - Create, view, and manage accounts
+  - Set highlighted account (featured account display)
+  - Delete accounts with zero balance
 - Transaction history
 - Fund transfers (between own accounts and to other users via account number)
+- Financial goals tracking
+  - Create and manage financial goals
+  - Track progress toward goals
+  - Goals displayed on both Analytics and Goals pages
 - Analytics and insights
+  - Spending by category charts
+  - Balance trends
+  - Income vs expenses
+  - Financial goals progress
 - Admin dashboard
 - Audit logging
 

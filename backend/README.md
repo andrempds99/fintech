@@ -108,6 +108,17 @@ backend/
 ### Accounts
 - `GET /api/accounts` - List user accounts
 - `GET /api/accounts/:id` - Get account details
+- `POST /api/accounts` - Create new account
+- `DELETE /api/accounts/:id` - Delete account (zero balance only)
+- `PATCH /api/accounts/:id/highlight` - Set/remove account highlight
+
+### Goals
+- `GET /api/goals` - List user goals
+- `GET /api/goals/:id` - Get goal details
+- `POST /api/goals` - Create new goal
+- `PUT /api/goals/:id` - Update goal
+- `PATCH /api/goals/:id/progress` - Add progress to goal
+- `DELETE /api/goals/:id` - Delete goal
 
 ### Transactions
 - `GET /api/transactions` - List transactions (with filters)

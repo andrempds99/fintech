@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { analyticsService } from "@/services/analytics.service";
+import { goalsService, Goal } from "@/services/goals.service";
 import { LoadingSkeleton } from "@/components/loading-skeleton";
 import { toast } from "sonner";
 import { 
@@ -35,6 +36,7 @@ export function AnalyticsPage() {
   });
   const [topCategory, setTopCategory] = useState({ name: "N/A", amount: 0 });
   const [predictions, setPredictions] = useState<any[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -44,12 +46,13 @@ export function AnalyticsPage() {
   const loadAnalytics = async () => {
     try {
       setIsLoading(true);
-      const [incomeExpenses, spendingData, balanceTrend, summaryData, predictionsData] = await Promise.all([
+      const [incomeExpenses, spendingData, balanceTrend, summaryData, predictionsData, goalsData] = await Promise.all([
         analyticsService.getIncomeExpenses(6),
         analyticsService.getSpendingByCategory(),
         analyticsService.getBalanceTrend(6),
         analyticsService.getSummary(),
         analyticsService.getSpendingPredictions(3),
+        goalsService.getAll(),
       ]);
 
       setIncomeExpensesData(incomeExpenses || []);
@@ -69,6 +72,7 @@ export function AnalyticsPage() {
       }));
       setSpendingByCategoryData(processedSpending);
       setPredictions(predictionsData || []);
+      setGoals(goalsData || []);
       
       // Find top category
       if (processedSpending.length > 0) {
@@ -367,56 +371,77 @@ export function AnalyticsPage() {
       <Card className="p-6 rounded-xl shadow-sm border border-border">
         <h3 className="mb-6">Financial Goals Progress</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p>Emergency Fund</p>
-              <Badge className="bg-[var(--positive)] text-white">On Track</Badge>
-            </div>
-            <div className="mb-2">
-              <p className="text-2xl">$15,000</p>
-              <p className="text-sm text-muted-foreground">of $20,000 goal</p>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-[var(--positive)] rounded-full transition-all"
-                style={{ width: '75%' }}
-              />
-            </div>
-          </div>
+          {(() => {
+            const activeGoals = goals.filter(g => g.status === 'active');
+            return activeGoals.length > 0 ? (
+              activeGoals.slice(0, 3).map((goal) => {
+                const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+                const isCompleted = goal.currentAmount >= goal.targetAmount;
+                const isOnTrack = progress >= 75;
+                const isActive = progress >= 50 && progress < 75;
+                
+                let badgeClass = "bg-[var(--info)] text-white";
+                let badgeText = "Active";
+                
+                if (isCompleted) {
+                  badgeClass = "bg-[var(--positive)] text-white";
+                  badgeText = "Excellent";
+                } else if (isOnTrack) {
+                  badgeClass = "bg-[var(--positive)] text-white";
+                  badgeText = "On Track";
+                } else if (isActive) {
+                  badgeClass = "bg-[var(--info)] text-white";
+                  badgeText = "Active";
+                }
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p>Vacation Savings</p>
-              <Badge className="bg-[var(--info)] text-white">Active</Badge>
-            </div>
-            <div className="mb-2">
-              <p className="text-2xl">$3,200</p>
-              <p className="text-sm text-muted-foreground">of $5,000 goal</p>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-[var(--info)] rounded-full transition-all"
-                style={{ width: '64%' }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p>Investment Portfolio</p>
-              <Badge className="bg-[var(--positive)] text-white">Excellent</Badge>
-            </div>
-            <div className="mb-2">
-              <p className="text-2xl">$125,340</p>
-              <p className="text-sm text-muted-foreground">+8.2% this year</p>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-[var(--chart-1)] to-[var(--chart-2)] rounded-full transition-all"
-                style={{ width: '100%' }}
-              />
-            </div>
-          </div>
+                return (
+                  <div key={goal.id}>
+                    <div className="flex items-center justify-between mb-2">
+                      <p>{goal.name}</p>
+                      <Badge className={badgeClass}>{badgeText}</Badge>
+                    </div>
+                    <div className="mb-2">
+                      <p className="text-2xl">${goal.currentAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-sm text-muted-foreground">of ${goal.targetAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} goal</p>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all ${
+                          isCompleted 
+                            ? 'bg-gradient-to-r from-[var(--chart-1)] to-[var(--chart-2)]' 
+                            : isOnTrack 
+                              ? 'bg-[var(--positive)]' 
+                              : 'bg-[var(--info)]'
+                        }`}
+                        style={{ width: `${Math.min(progress, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p>No goals yet</p>
+                    <Badge className="bg-[var(--info)] text-white">Active</Badge>
+                  </div>
+                  <div className="mb-2">
+                    <p className="text-2xl">$0.00</p>
+                    <p className="text-sm text-muted-foreground">Create your first goal</p>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-[var(--info)] rounded-full transition-all"
+                      style={{ width: '0%' }}
+                    />
+                  </div>
+                </div>
+                <div></div>
+                <div></div>
+              </>
+            );
+          })()}
         </div>
       </Card>
     </div>

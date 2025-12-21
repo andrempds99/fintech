@@ -191,9 +191,21 @@ frontend/
 - ✅ JWT-based session management
 - ✅ Role-based access control
 - ✅ Account management
+  - Create, view, and manage accounts
+  - Set highlighted account (featured account display)
+  - Delete accounts with zero balance
 - ✅ Transaction history with filtering
 - ✅ Transfer between accounts
+- ✅ Financial goals tracking
+  - Create, update, and delete goals
+  - Track progress toward goals
+  - Goals displayed on both Analytics and Goals pages
+  - Mock goals included in seed data
 - ✅ Analytics and insights
+  - Spending by category charts
+  - Balance trends
+  - Income vs expenses
+  - Financial goals progress
 - ✅ Admin dashboard
 - ✅ Audit logging
 - ✅ Mock data generation

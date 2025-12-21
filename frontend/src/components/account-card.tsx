@@ -39,7 +39,15 @@ export function AccountCard({ account, featured = false, onClick, onDelete, onSe
   const handleSetHighlight = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onSetHighlight) {
-      onSetHighlight(account.id, !account.isHighlighted);
+      // Always set to highlighted - backend will unhighlight the previous one
+      onSetHighlight(account.id, true);
+    }
+  };
+
+  const handleRemoveHighlight = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onSetHighlight) {
+      onSetHighlight(account.id, false);
     }
   };
 
@@ -54,7 +62,27 @@ export function AccountCard({ account, featured = false, onClick, onDelete, onSe
             <p className="text-white/70 text-sm mb-1">{account.type} Account</p>
             <h4 className="text-white">{account.name}</h4>
           </div>
-          <CreditCard className="h-8 w-8 text-white/70" />
+          <div className="flex items-center gap-2">
+            {onSetHighlight && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={handleMenuClick}>
+                  <button 
+                    className="p-1 hover:bg-white/10 rounded"
+                    onClick={handleMenuClick}
+                  >
+                    <MoreVertical className="h-5 w-5 text-white/70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={handleMenuClick}>
+                  <DropdownMenuItem onClick={handleRemoveHighlight}>
+                    <Star className="h-4 w-4 mr-2" />
+                    Remove Highlight
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <CreditCard className="h-8 w-8 text-white/70" />
+          </div>
         </div>
         <div>
           <p className="text-white/70 text-sm mb-2">Available Balance</p>
@@ -94,10 +122,19 @@ export function AccountCard({ account, featured = false, onClick, onDelete, onSe
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={handleMenuClick}>
               {onSetHighlight && (
-                <DropdownMenuItem onClick={handleSetHighlight}>
-                  <Star className="h-4 w-4 mr-2" />
-                  {account.isHighlighted ? 'Remove Highlight' : 'Set as Highlight Account'}
-                </DropdownMenuItem>
+                <>
+                  {account.isHighlighted ? (
+                    <DropdownMenuItem onClick={handleRemoveHighlight}>
+                      <Star className="h-4 w-4 mr-2" />
+                      Remove Highlight
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={handleSetHighlight}>
+                      <Star className="h-4 w-4 mr-2" />
+                      Set as Highlight Account
+                    </DropdownMenuItem>
+                  )}
+                </>
               )}
               {onDelete && (
                 <>

@@ -145,6 +145,52 @@ async function seedDatabase() {
     }
     console.log(`Created ${totalTransactions} transactions`);
 
+    // Create mock goals for users
+    const mockGoals = [
+      {
+        name: 'Emergency Fund',
+        targetAmount: 20000,
+        currentAmount: 15000,
+        category: 'emergency_fund',
+        status: 'active',
+      },
+      {
+        name: 'Vacation Savings',
+        targetAmount: 5000,
+        currentAmount: 3200,
+        category: 'vacation',
+        status: 'active',
+      },
+      {
+        name: 'Investment Portfolio',
+        targetAmount: 125000,
+        currentAmount: 125340,
+        category: 'retirement',
+        status: 'active',
+      },
+    ];
+
+    let totalGoals = 0;
+    // Create goals for admin and first regular user
+    for (const user of [adminResult.rows[0], ...users.slice(0, 1)]) {
+      for (const goalData of mockGoals) {
+        await client.query(
+          `INSERT INTO goals (user_id, name, target_amount, current_amount, category, status)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            user.id,
+            goalData.name,
+            goalData.targetAmount,
+            goalData.currentAmount,
+            goalData.category,
+            goalData.status,
+          ]
+        );
+        totalGoals++;
+      }
+    }
+    console.log(`Created ${totalGoals} goals`);
+
     // Create some audit logs
     const auditActions = [
       'User Login',

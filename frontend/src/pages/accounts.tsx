@@ -324,7 +324,14 @@ export function AccountsPage() {
         <div>
           <h2 className="mb-4">All Accounts</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {accounts.filter(acc => !acc.isHighlighted || acc.status !== 'active').map((account) => (
+            {accounts.filter(acc => {
+              // Exclude the highlighted active account from the grid
+              const highlightedAccount = activeAccounts.find(a => a.isHighlighted);
+              if (highlightedAccount && acc.id === highlightedAccount.id) {
+                return false;
+              }
+              return true;
+            }).map((account) => (
               <AccountCard 
                 key={account.id} 
                 account={account}

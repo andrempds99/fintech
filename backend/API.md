@@ -111,7 +111,8 @@ Get all accounts for current user.
       "currency": "USD",
       "status": "active",
       "account_number": "****4521",
-      "limit": 50000
+      "limit": 50000,
+      "is_highlighted": false
     }
   ]
 }
@@ -130,6 +131,36 @@ Create a new account.
   "type": "Savings",
   "currency": "USD", // optional
   "limit": 10000 // optional
+}
+```
+
+#### DELETE /api/accounts/:id
+Delete an account. Only allowed for accounts with zero balance.
+
+**Response:** 204 No Content
+
+#### PATCH /api/accounts/:id/highlight
+Set or remove highlight status for an account. When setting an account as highlighted, all other accounts for the user are automatically unhighlighted.
+
+**Request Body:**
+```json
+{
+  "isHighlighted": true
+}
+```
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "name": "Premium Checking",
+  "type": "Checking",
+  "balance": 24580.50,
+  "currency": "USD",
+  "status": "active",
+  "account_number": "****4521",
+  "limit": 50000,
+  "is_highlighted": true
 }
 ```
 
@@ -197,6 +228,65 @@ Create a transfer between accounts.
   "toAccount": {...}
 }
 ```
+
+### Goals
+
+#### GET /api/goals
+Get all goals for current user.
+
+**Response:**
+```json
+{
+  "goals": [
+    {
+      "id": "uuid",
+      "name": "Emergency Fund",
+      "target_amount": 20000.00,
+      "current_amount": 15000.00,
+      "category": "emergency_fund",
+      "target_date": "2025-12-31",
+      "status": "active"
+    }
+  ]
+}
+```
+
+#### GET /api/goals/:id
+Get goal details.
+
+#### POST /api/goals
+Create a new goal.
+
+**Request Body:**
+```json
+{
+  "name": "Emergency Fund",
+  "targetAmount": 20000.00,
+  "currentAmount": 0.00, // optional
+  "category": "emergency_fund",
+  "targetDate": "2025-12-31" // optional
+}
+```
+
+#### PUT /api/goals/:id
+Update a goal.
+
+**Request Body:** Same as POST
+
+#### PATCH /api/goals/:id/progress
+Add progress to a goal.
+
+**Request Body:**
+```json
+{
+  "amount": 500.00
+}
+```
+
+#### DELETE /api/goals/:id
+Delete a goal.
+
+**Response:** 204 No Content
 
 ### Analytics
 
