@@ -267,11 +267,11 @@ export function TransactionsPage() {
               Choose format and date range for export
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="export-format">Format</Label>
+          <div className="space-y-5 py-6">
+            <div className="space-y-2">
+              <Label htmlFor="export-format" className="text-sm font-medium">Format</Label>
               <Select name="exportFormat" value={exportFormat} onValueChange={(value: 'csv' | 'pdf') => setExportFormat(value)}>
-                <SelectTrigger id="export-format" className="mt-1">
+                <SelectTrigger id="export-format" className="bg-input-background border-0 h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -281,26 +281,26 @@ export function TransactionsPage() {
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="date-from">From Date (Optional)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="date-from" className="text-sm font-medium">From Date (Optional)</Label>
                 <Input
                   id="date-from"
                   name="exportStartDate"
                   type="date"
                   value={exportDateFrom}
                   onChange={(e) => setExportDateFrom(e.target.value)}
-                  className="mt-1"
+                  className="bg-input-background border-0 h-10"
                 />
               </div>
-              <div>
-                <Label htmlFor="date-to">To Date (Optional)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="date-to" className="text-sm font-medium">To Date (Optional)</Label>
                 <Input
                   id="date-to"
                   name="exportEndDate"
                   type="date"
                   value={exportDateTo}
                   onChange={(e) => setExportDateTo(e.target.value)}
-                  className="mt-1"
+                  className="bg-input-background border-0 h-10"
                 />
               </div>
             </div>

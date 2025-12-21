@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowRight, CheckCircle, Clock, Calendar, Trash2, Pause, Play } from "lucide-react";
 import { accountService } from "@/services/account.service";
 import { transferService } from "@/services/transfer.service";
@@ -326,17 +325,17 @@ export function TransfersPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleScheduleTransfer}>
-            <div className="space-y-4 py-4">
+            <div className="space-y-5 py-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="schedule-from-account">From Account *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-from-account" className="text-sm font-medium">From Account *</Label>
                   <Select
                     name="scheduleFromAccount"
                     value={scheduleFormData.fromAccountId}
                     onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, fromAccountId: value })}
                     required
                   >
-                    <SelectTrigger id="schedule-from-account" className="mt-1">
+                    <SelectTrigger id="schedule-from-account" className="bg-input-background border-0 h-10">
                       <SelectValue placeholder="Select account" />
                     </SelectTrigger>
                     <SelectContent>
@@ -352,15 +351,15 @@ export function TransfersPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="schedule-to-account">To Account *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-to-account" className="text-sm font-medium">To Account *</Label>
                   <Select
                     name="scheduleToAccount"
                     value={scheduleFormData.toAccountId}
                     onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, toAccountId: value })}
                     required
                   >
-                    <SelectTrigger id="schedule-to-account" className="mt-1">
+                    <SelectTrigger id="schedule-to-account" className="bg-input-background border-0 h-10">
                       <SelectValue placeholder="Select account" />
                     </SelectTrigger>
                     <SelectContent>
@@ -380,8 +379,8 @@ export function TransfersPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="schedule-amount">Amount *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-amount" className="text-sm font-medium">Amount *</Label>
                   <Input
                     id="schedule-amount"
                     name="scheduleAmount"
@@ -390,19 +389,19 @@ export function TransfersPage() {
                     value={scheduleFormData.amount}
                     onChange={(e) => setScheduleFormData({ ...scheduleFormData, amount: e.target.value })}
                     placeholder="0.00"
-                    className="mt-1"
+                    className="bg-input-background border-0 h-10"
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="schedule-frequency">Frequency *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-frequency" className="text-sm font-medium">Frequency *</Label>
                   <Select
                     name="scheduleFrequency"
                     value={scheduleFormData.frequency}
                     onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, frequency: value })}
                     required
                   >
-                    <SelectTrigger id="schedule-frequency" className="mt-1">
+                    <SelectTrigger id="schedule-frequency" className="bg-input-background border-0 h-10">
                       <SelectValue placeholder="Select frequency" />
                     </SelectTrigger>
                     <SelectContent>
@@ -414,32 +413,32 @@ export function TransfersPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="schedule-next-date">Next Execution Date *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-next-date" className="text-sm font-medium">Next Execution Date *</Label>
                   <Input
                     id="schedule-next-date"
                     name="scheduleNextDate"
                     type="date"
                     value={scheduleFormData.nextExecutionDate}
                     onChange={(e) => setScheduleFormData({ ...scheduleFormData, nextExecutionDate: e.target.value })}
-                    className="mt-1"
+                    className="bg-input-background border-0 h-10"
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="schedule-end-date">End Date (Optional)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-end-date" className="text-sm font-medium">End Date (Optional)</Label>
                   <Input
                     id="schedule-end-date"
                     name="scheduleEndDate"
                     type="date"
                     value={scheduleFormData.endDate}
                     onChange={(e) => setScheduleFormData({ ...scheduleFormData, endDate: e.target.value })}
-                    className="mt-1"
+                    className="bg-input-background border-0 h-10"
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="schedule-description">Description (Optional)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="schedule-description" className="text-sm font-medium">Description (Optional)</Label>
                 <Input
                   id="schedule-description"
                   name="scheduleDescription"
@@ -447,7 +446,7 @@ export function TransfersPage() {
                   value={scheduleFormData.description}
                   onChange={(e) => setScheduleFormData({ ...scheduleFormData, description: e.target.value })}
                   placeholder="e.g., Monthly savings transfer"
-                  className="mt-1"
+                  className="bg-input-background border-0 h-10"
                 />
               </div>
             </div>
@@ -490,27 +489,34 @@ export function TransfersPage() {
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="transfer-type">Transfer Type</Label>
-              <RadioGroup 
-                name="transferType"
-                value={transferType} 
-                onValueChange={(value) => {
-                  setTransferType(value as 'own' | 'other');
-                  setToAccount("");
-                  setToAccountNumber("");
-                }}
-                className="mt-2 flex gap-6"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="own" id="own" />
-                  <Label htmlFor="own" className="font-normal cursor-pointer">To my account</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="other" id="other" />
-                  <Label htmlFor="other" className="font-normal cursor-pointer">To another account</Label>
-                </div>
-              </RadioGroup>
+            <div className="space-y-2">
+              <Label htmlFor="transfer-type" className="text-sm font-medium">Transfer Type</Label>
+              <div className="flex gap-3 mt-2">
+                <Button
+                  type="button"
+                  variant={transferType === 'own' ? 'default' : 'outline'}
+                  className={`flex-1 h-10 ${transferType === 'own' ? 'bg-slate-900 hover:bg-slate-800 text-white' : ''}`}
+                  onClick={() => {
+                    setTransferType('own');
+                    setToAccount("");
+                    setToAccountNumber("");
+                  }}
+                >
+                  To my account
+                </Button>
+                <Button
+                  type="button"
+                  variant={transferType === 'other' ? 'default' : 'outline'}
+                  className={`flex-1 h-10 ${transferType === 'other' ? 'bg-slate-900 hover:bg-slate-800 text-white' : ''}`}
+                  onClick={() => {
+                    setTransferType('other');
+                    setToAccount("");
+                    setToAccountNumber("");
+                  }}
+                >
+                  To another account
+                </Button>
+              </div>
             </div>
 
             {transferType === 'own' ? (

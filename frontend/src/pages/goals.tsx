@@ -20,9 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Target, Trash2, Edit } from "lucide-react";
+import { Plus, Target, Trash2, Edit, TrendingUp } from "lucide-react";
 import { goalsService, Goal } from "@/services/goals.service";
 import { LoadingSkeleton } from "@/components/loading-skeleton";
+import { EmptyState } from "@/components/empty-state";
 import { toast } from "sonner";
 
 const goalCategories = [
@@ -39,6 +40,8 @@ export function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -47,11 +50,17 @@ export function GoalsPage() {
     category: "",
     targetDate: "",
   });
+  const [progressAmount, setProgressAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProgressSubmitting, setIsProgressSubmitting] = useState(false);
 
   useEffect(() => {
     loadGoals();
   }, []);
+
+  useEffect(() => {
+    console.log('[Goals] isDialogOpen state changed to:', isDialogOpen);
+  }, [isDialogOpen]);
 
   const loadGoals = async () => {
     try {
@@ -98,9 +107,7 @@ export function GoalsPage() {
         toast.success("Goal created successfully");
       }
 
-      setIsDialogOpen(false);
-      setEditingGoal(null);
-      setFormData({ name: "", targetAmount: "", currentAmount: "", category: "", targetDate: "" });
+      handleCloseDialog();
       await loadGoals();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to save goal");
@@ -108,6 +115,29 @@ export function GoalsPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleOpenDialog = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('[Goals] handleOpenDialog called');
+    console.log('[Goals] Current isDialogOpen state:', isDialogOpen);
+    setEditingGoal(null);
+    setFormData({ name: "", targetAmount: "", currentAmount: "", category: "", targetDate: "" });
+    // Use a small timeout to ensure the click event has fully processed
+    setTimeout(() => {
+      setIsDialogOpen(true);
+      console.log('[Goals] setIsDialogOpen(true) called');
+    }, 10);
+  };
+
+  const handleCloseDialog = () => {
+    console.log('[Goals] handleCloseDialog called');
+    setIsDialogOpen(false);
+    setEditingGoal(null);
+    setFormData({ name: "", targetAmount: "", currentAmount: "", category: "", targetDate: "" });
   };
 
   const handleEdit = (goal: Goal) => {
@@ -137,19 +167,37 @@ export function GoalsPage() {
     }
   };
 
-  const handleAddProgress = async (goal: Goal) => {
-    const amount = prompt(`Add amount to "${goal.name}":`);
-    if (!amount || isNaN(parseFloat(amount))) {
+  const handleOpenProgressDialog = (goal: Goal) => {
+    setSelectedGoal(goal);
+    setProgressAmount("");
+    setIsProgressDialogOpen(true);
+  };
+
+  const handleCloseProgressDialog = () => {
+    setIsProgressDialogOpen(false);
+    setSelectedGoal(null);
+    setProgressAmount("");
+  };
+
+  const handleAddProgress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedGoal || !progressAmount || isNaN(parseFloat(progressAmount))) {
+      toast.error("Please enter a valid amount");
       return;
     }
 
     try {
-      await goalsService.updateProgress(goal.id, parseFloat(amount));
+      setIsProgressSubmitting(true);
+      await goalsService.updateProgress(selectedGoal.id, parseFloat(progressAmount));
       toast.success("Progress updated successfully");
+      handleCloseProgressDialog();
       await loadGoals();
     } catch (error: any) {
       toast.error("Failed to update progress");
       console.error(error);
+    } finally {
+      setIsProgressSubmitting(false);
     }
   };
 
@@ -162,6 +210,7 @@ export function GoalsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1>Financial Goals</h1>
@@ -169,10 +218,9 @@ export function GoalsPage() {
         </div>
         <Button 
           className="bg-slate-900 hover:bg-slate-800"
-          onClick={() => {
-            setEditingGoal(null);
-            setFormData({ name: "", targetAmount: "", currentAmount: "", category: "", targetDate: "" });
-            setIsDialogOpen(true);
+          onClick={(e) => {
+            console.log('[Goals] Button clicked!');
+            handleOpenDialog(e);
           }}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -180,9 +228,70 @@ export function GoalsPage() {
         </Button>
       </div>
 
+      {/* Financial Goals Progress */}
+      {activeGoals.length > 0 && (
+        <Card className="p-6 rounded-xl shadow-sm border border-border">
+          <h3 className="mb-6">Financial Goals Progress</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {activeGoals.slice(0, 3).map((goal) => {
+              const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+              const isCompleted = goal.currentAmount >= goal.targetAmount;
+              const isOnTrack = progress >= 75;
+              const isActive = progress >= 50 && progress < 75;
+              
+              let badgeClass = "bg-[var(--info)] text-white";
+              let badgeText = "Active";
+              
+              if (isCompleted) {
+                badgeClass = "bg-[var(--positive)] text-white";
+                badgeText = "Excellent";
+              } else if (isOnTrack) {
+                badgeClass = "bg-[var(--positive)] text-white";
+                badgeText = "On Track";
+              } else if (isActive) {
+                badgeClass = "bg-[var(--info)] text-white";
+                badgeText = "Active";
+              }
+
+              return (
+                <div key={goal.id}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p>{goal.name}</p>
+                    <Badge className={badgeClass}>{badgeText}</Badge>
+                  </div>
+                  <div className="mb-2">
+                    <p className="text-2xl">${goal.currentAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                    <p className="text-sm text-muted-foreground">of ${goal.targetAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} goal</p>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all ${
+                        isCompleted 
+                          ? 'bg-gradient-to-r from-[var(--chart-1)] to-[var(--chart-2)]' 
+                          : isOnTrack 
+                            ? 'bg-[var(--positive)]' 
+                            : 'bg-[var(--info)]'
+                      }`}
+                      style={{ width: `${Math.min(progress, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       {/* Create/Edit Goal Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={(open) => {
+          console.log('[Goals] Dialog onOpenChange called with:', open);
+          console.log('[Goals] Current isDialogOpen:', isDialogOpen);
+          setIsDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingGoal ? 'Edit Goal' : 'Create New Goal'}</DialogTitle>
             <DialogDescription>
@@ -190,28 +299,28 @@ export function GoalsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateGoal}>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="goal-name">Goal Name *</Label>
+            <div className="space-y-5 py-6">
+              <div className="space-y-2">
+                <Label htmlFor="goal-name" className="text-sm font-medium">Goal Name *</Label>
                 <Input
                   id="goal-name"
                   name="goalName"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., Emergency Fund"
-                  className="mt-1"
+                  className="bg-input-background border-0 h-10"
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="goal-category">Category *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="goal-category" className="text-sm font-medium">Category *</Label>
                 <Select
                   name="goalCategory"
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
                   required
                 >
-                  <SelectTrigger id="goal-category" className="mt-1">
+                  <SelectTrigger id="goal-category" className="bg-input-background border-0 h-10">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -224,8 +333,8 @@ export function GoalsPage() {
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="target-amount">Target Amount *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="target-amount" className="text-sm font-medium">Target Amount *</Label>
                   <Input
                     id="target-amount"
                     name="targetAmount"
@@ -234,12 +343,12 @@ export function GoalsPage() {
                     value={formData.targetAmount}
                     onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
                     placeholder="0.00"
-                    className="mt-1"
+                    className="bg-input-background border-0 h-10"
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="current-amount">Current Amount</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="current-amount" className="text-sm font-medium">Current Amount</Label>
                   <Input
                     id="current-amount"
                     name="currentAmount"
@@ -248,19 +357,19 @@ export function GoalsPage() {
                     value={formData.currentAmount}
                     onChange={(e) => setFormData({ ...formData, currentAmount: e.target.value })}
                     placeholder="0.00"
-                    className="mt-1"
+                    className="bg-input-background border-0 h-10"
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="target-date">Target Date (Optional)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="target-date" className="text-sm font-medium">Target Date (Optional)</Label>
                 <Input
                   id="target-date"
                   name="targetDate"
                   type="date"
                   value={formData.targetDate}
                   onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
-                  className="mt-1"
+                  className="bg-input-background border-0 h-10"
                 />
               </div>
             </div>
@@ -268,10 +377,7 @@ export function GoalsPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  setIsDialogOpen(false);
-                  setEditingGoal(null);
-                }}
+                onClick={handleCloseDialog}
                 disabled={isSubmitting}
               >
                 Cancel
@@ -284,16 +390,84 @@ export function GoalsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Add Progress Dialog */}
+      <Dialog open={isProgressDialogOpen} onOpenChange={setIsProgressDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Progress</DialogTitle>
+            <DialogDescription>
+              Add amount to "{selectedGoal?.name}"
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddProgress}>
+            <div className="space-y-5 py-6">
+              <div className="space-y-2">
+                <Label htmlFor="progress-amount" className="text-sm font-medium">Amount *</Label>
+                <Input
+                  id="progress-amount"
+                  name="progressAmount"
+                  type="number"
+                  step="0.01"
+                  value={progressAmount}
+                  onChange={(e) => setProgressAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="bg-input-background border-0 h-10"
+                  required
+                  autoFocus
+                />
+              </div>
+              {selectedGoal && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Current</p>
+                      <p className="font-medium">${selectedGoal.currentAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Target</p>
+                      <p className="font-medium">${selectedGoal.targetAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+                  {progressAmount && !isNaN(parseFloat(progressAmount)) && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-sm text-muted-foreground">New Total</p>
+                      <p className="font-medium text-lg">
+                        ${(selectedGoal.currentAmount + parseFloat(progressAmount)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseProgressDialog}
+                disabled={isProgressSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isProgressSubmitting}>
+                {isProgressSubmitting ? "Adding..." : "Add Progress"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Active Goals */}
       {activeGoals.length > 0 && (
         <div>
           <h2 className="mb-4">Active Goals</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {activeGoals.map((goal) => {
-              const progress = (goal.currentAmount / goal.targetAmount) * 100;
-              const remaining = goal.targetAmount - goal.currentAmount;
+              const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+              const remaining = Math.max(goal.targetAmount - goal.currentAmount, 0);
+              const isCompleted = goal.currentAmount >= goal.targetAmount;
+              
               return (
-                <Card key={goal.id} className="p-6 rounded-xl shadow-sm border border-border">
+                <Card key={goal.id} className="p-6 rounded-xl shadow-sm border border-border hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
@@ -309,6 +483,7 @@ export function GoalsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEdit(goal)}
+                        title="Edit goal"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -316,6 +491,7 @@ export function GoalsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(goal.id)}
+                        title="Delete goal"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -350,6 +526,15 @@ export function GoalsPage() {
                       </div>
                     )}
 
+                    {isCompleted && (
+                      <div className="pt-2 border-t border-border">
+                        <Badge className="bg-[var(--positive)] text-white">
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          Goal Achieved!
+                        </Badge>
+                      </div>
+                    )}
+
                     {goal.targetDate && (
                       <p className="text-xs text-muted-foreground">
                         Target: {new Date(goal.targetDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -360,7 +545,7 @@ export function GoalsPage() {
                       variant="outline"
                       size="sm"
                       className="w-full"
-                      onClick={() => handleAddProgress(goal)}
+                      onClick={() => handleOpenProgressDialog(goal)}
                     >
                       Add Progress
                     </Button>
@@ -378,7 +563,6 @@ export function GoalsPage() {
           <h2 className="mb-4">Completed Goals</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {completedGoals.map((goal) => {
-              const progress = 100;
               return (
                 <Card key={goal.id} className="p-6 rounded-xl shadow-sm border border-border opacity-75">
                   <div className="flex items-start justify-between mb-4">
@@ -397,7 +581,7 @@ export function GoalsPage() {
                         <span className="text-muted-foreground">Progress</span>
                         <span className="font-medium">100%</span>
                       </div>
-                      <Progress value={progress} className="h-2" />
+                      <Progress value={100} className="h-2" />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -418,23 +602,16 @@ export function GoalsPage() {
         </div>
       )}
 
+      {/* Empty State */}
       {goals.length === 0 && (
-        <Card className="p-12 rounded-xl shadow-sm border border-border text-center">
-          <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="mb-2">No goals yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Create your first financial goal to start tracking your progress
-          </p>
-          <Button 
-            className="bg-slate-900 hover:bg-slate-800"
-            onClick={() => setIsDialogOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Goal
-          </Button>
-        </Card>
+        <EmptyState
+          icon={Target}
+          title="No goals yet"
+          description="Create your first financial goal to start tracking your progress"
+          actionLabel="Create Goal"
+          onAction={handleOpenDialog}
+        />
       )}
     </div>
   );
 }
-

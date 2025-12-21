@@ -19,13 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Wallet } from "lucide-react";
 import { accountService } from "@/services/account.service";
 import { analyticsService } from "@/services/analytics.service";
 import { transactionService } from "@/services/transaction.service";
 import { Account, Transaction } from "@/lib/mock-data";
 import { LoadingSkeleton } from "@/components/loading-skeleton";
 import { TransactionRow } from "@/components/transaction-row";
+import { AccountCard } from "@/components/account-card";
+import { EmptyState } from "@/components/empty-state";
 import { toast } from "sonner";
 import {
   AreaChart,
@@ -64,6 +66,10 @@ export function AccountsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    console.log('[Accounts] isDialogOpen state changed to:', isDialogOpen);
+  }, [isDialogOpen]);
 
   const loadData = async () => {
     try {
@@ -124,6 +130,26 @@ export function AccountsPage() {
     }
   };
 
+  const handleOpenDialog = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('[Accounts] handleOpenDialog called');
+    console.log('[Accounts] Current isDialogOpen state:', isDialogOpen);
+    // Use a small timeout to ensure the click event has fully processed
+    setTimeout(() => {
+      setIsDialogOpen(true);
+      console.log('[Accounts] setIsDialogOpen(true) called');
+    }, 10);
+  };
+
+  const handleCloseDialog = () => {
+    console.log('[Accounts] handleCloseDialog called');
+    setIsDialogOpen(false);
+    setFormData({ name: "", type: "", currency: "USD", limit: "" });
+  };
+
   if (isLoading) {
     return <LoadingSkeleton />;
   }
@@ -136,6 +162,7 @@ export function AccountsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1>Accounts & Wallets</h1>
@@ -143,7 +170,10 @@ export function AccountsPage() {
         </div>
         <Button 
           className="bg-slate-900 hover:bg-slate-800"
-          onClick={() => setIsDialogOpen(true)}
+          onClick={(e) => {
+            console.log('[Accounts] Button clicked!');
+            handleOpenDialog(e);
+          }}
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Account
@@ -151,8 +181,15 @@ export function AccountsPage() {
       </div>
 
       {/* Create Account Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={(open) => {
+          console.log('[Accounts] Dialog onOpenChange called with:', open);
+          console.log('[Accounts] Current isDialogOpen:', isDialogOpen);
+          setIsDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Create New Account</DialogTitle>
             <DialogDescription>
@@ -160,28 +197,28 @@ export function AccountsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateAccount}>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="account-name">Account Name *</Label>
+            <div className="space-y-5 py-6">
+              <div className="space-y-2">
+                <Label htmlFor="account-name" className="text-sm font-medium">Account Name *</Label>
                 <Input
                   id="account-name"
                   name="accountName"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., Savings Account"
-                  className="mt-1"
+                  className="bg-input-background border-0 h-10"
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="account-type">Account Type *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="account-type" className="text-sm font-medium">Account Type *</Label>
                 <Select
                   name="accountType"
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value })}
                   required
                 >
-                  <SelectTrigger id="account-type" className="mt-1">
+                  <SelectTrigger id="account-type" className="bg-input-background border-0 h-10">
                     <SelectValue placeholder="Select account type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -193,14 +230,14 @@ export function AccountsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="account-currency">Currency</Label>
+              <div className="space-y-2">
+                <Label htmlFor="account-currency" className="text-sm font-medium">Currency</Label>
                 <Select
                   name="accountCurrency"
                   value={formData.currency}
                   onValueChange={(value) => setFormData({ ...formData, currency: value })}
                 >
-                  <SelectTrigger id="account-currency" className="mt-1">
+                  <SelectTrigger id="account-currency" className="bg-input-background border-0 h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -211,8 +248,8 @@ export function AccountsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="account-limit">Transaction Limit (Optional)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="account-limit" className="text-sm font-medium">Transaction Limit (Optional)</Label>
                 <Input
                   id="account-limit"
                   name="accountLimit"
@@ -221,7 +258,7 @@ export function AccountsPage() {
                   value={formData.limit}
                   onChange={(e) => setFormData({ ...formData, limit: e.target.value })}
                   placeholder="e.g., 10000"
-                  className="mt-1"
+                  className="bg-input-background border-0 h-10"
                 />
               </div>
             </div>
@@ -229,7 +266,7 @@ export function AccountsPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsDialogOpen(false)}
+                onClick={handleCloseDialog}
                 disabled={isSubmitting}
               >
                 Cancel
@@ -242,176 +279,158 @@ export function AccountsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Accounts Grid */}
-      <div className="grid gap-4">
-        {accounts.length > 0 ? (
-          accounts.map((account) => (
-          <Card key={account.id} className="p-6 rounded-xl shadow-sm border border-border hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3>{account.name}</h3>
-                  <Badge className={statusColors[account.status]}>
-                    {account.status}
-                  </Badge>
-                </div>
-                <p className="text-muted-foreground mb-4">{account.type} • {account.accountNumber}</p>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Balance</p>
-                    <p className="text-xl">
-                      ${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Currency</p>
-                    <p>{account.currency}</p>
-                  </div>
-                  {account.limit && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Transaction Limit</p>
-                      <p>${account.limit.toLocaleString('en-US')}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Account Number</p>
-                    <p>{account.accountNumber}</p>
-                  </div>
-                </div>
-              </div>
+      {/* Featured Account Card */}
+      {activeAccounts.length > 0 && (
+        <AccountCard account={activeAccounts[0]} featured />
+      )}
 
-            </div>
-          </Card>
-          ))
-        ) : (
-          <Card className="p-6 rounded-xl shadow-sm border border-border">
-            <p className="text-muted-foreground text-center py-4">No accounts found. Create your first account to get started.</p>
-          </Card>
-        )}
-      </div>
+      {/* Accounts Grid */}
+      {accounts.length > 0 ? (
+        <div>
+          <h2 className="mb-4">All Accounts</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {accounts.slice(activeAccounts.length > 0 ? 1 : 0).map((account) => (
+              <AccountCard key={account.id} account={account} />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <EmptyState
+          icon={Wallet}
+          title="No accounts yet"
+          description="Create your first account to start managing your finances"
+          actionLabel="Create Account"
+          onAction={handleOpenDialog}
+        />
+      )}
 
       {/* Account Summary */}
-      <Card className="p-6 rounded-xl shadow-sm border border-border">
-        <h3 className="mb-4">Account Summary</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Total Active Accounts</p>
-            <p className="text-2xl">{activeAccounts.length}</p>
+      {accounts.length > 0 && (
+        <Card className="p-6 rounded-xl shadow-sm border border-border">
+          <h3 className="mb-4">Account Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Total Active Accounts</p>
+              <p className="text-2xl">{activeAccounts.length}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Total Balance</p>
+              <p className="text-2xl">
+                ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Available Limit</p>
+              <p className="text-2xl">
+                ${totalLimit.toLocaleString('en-US')}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Total Balance</p>
-            <p className="text-2xl">
-              ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Available Limit</p>
-            <p className="text-2xl">
-              ${totalLimit.toLocaleString('en-US')}
-            </p>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Analytics Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Balance Trend Chart */}
-        <Card className="p-6 rounded-xl shadow-sm border border-border">
-          <h3 className="mb-6">Balance Trend</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            {balanceTrend.length > 0 ? (
-              <AreaChart data={balanceTrend}>
-                <defs>
-                  <linearGradient id="colorBalanceAccounts" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="var(--muted-foreground)"
-                  style={{ fontSize: '12px' }}
-                />
-                <YAxis 
-                  stroke="var(--muted-foreground)"
-                  style={{ fontSize: '12px' }}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="balance" 
-                  stroke="var(--chart-1)" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorBalanceAccounts)" 
-                />
-              </AreaChart>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                No balance trend data available
-              </div>
-            )}
-          </ResponsiveContainer>
-        </Card>
+      {accounts.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Balance Trend Chart */}
+          <Card className="p-6 rounded-xl shadow-sm border border-border">
+            <h3 className="mb-6">Balance Trend</h3>
+            <ResponsiveContainer width="100%" height={280}>
+              {balanceTrend.length > 0 ? (
+                <AreaChart data={balanceTrend}>
+                  <defs>
+                    <linearGradient id="colorBalanceAccounts" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="var(--muted-foreground)"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <YAxis 
+                    stroke="var(--muted-foreground)"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="balance" 
+                    stroke="var(--chart-1)" 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorBalanceAccounts)" 
+                  />
+                </AreaChart>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No balance trend data available
+                </div>
+              )}
+            </ResponsiveContainer>
+          </Card>
 
-        {/* Spending by Category */}
-        <Card className="p-6 rounded-xl shadow-sm border border-border">
-          <h3 className="mb-6">Spending by Category</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            {spendingByCategory.length > 0 ? (
-              <PieChart>
-                <Pie
-                  data={spendingByCategory}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ category, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="amount"
-                >
-                  {spendingByCategory.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px'
-                  }}
-                />
-              </PieChart>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                No spending data available
-              </div>
-            )}
-          </ResponsiveContainer>
-        </Card>
-      </div>
+          {/* Spending by Category */}
+          <Card className="p-6 rounded-xl shadow-sm border border-border">
+            <h3 className="mb-6">Spending by Category</h3>
+            <ResponsiveContainer width="100%" height={280}>
+              {spendingByCategory.length > 0 ? (
+                <PieChart>
+                  <Pie
+                    data={spendingByCategory}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ category, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="amount"
+                  >
+                    {spendingByCategory.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </PieChart>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No spending data available
+                </div>
+              )}
+            </ResponsiveContainer>
+          </Card>
+        </div>
+      )}
 
       {/* Recent Transactions */}
-      <Card className="p-6 rounded-xl shadow-sm border border-border">
-        <h3 className="mb-4">Recent Transactions</h3>
-        <div className="space-y-1">
-          {recentTransactions.length > 0 ? (
-            recentTransactions.map((transaction) => (
-              <TransactionRow key={transaction.id} transaction={transaction} />
-            ))
-          ) : (
-            <p className="text-muted-foreground text-center py-4">No recent transactions</p>
-          )}
-        </div>
-      </Card>
+      {accounts.length > 0 && (
+        <Card className="p-6 rounded-xl shadow-sm border border-border">
+          <h3 className="mb-4">Recent Transactions</h3>
+          <div className="space-y-1">
+            {recentTransactions.length > 0 ? (
+              recentTransactions.map((transaction) => (
+                <TransactionRow key={transaction.id} transaction={transaction} />
+              ))
+            ) : (
+              <p className="text-muted-foreground text-center py-4">No recent transactions</p>
+            )}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

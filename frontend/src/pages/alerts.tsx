@@ -20,11 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Bell, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Bell, Trash2, AlertCircle, Wallet } from "lucide-react";
 import { alertsService, Alert } from "@/services/alerts.service";
 import { accountService } from "@/services/account.service";
 import { Account } from "@/lib/mock-data";
 import { LoadingSkeleton } from "@/components/loading-skeleton";
+import { EmptyState } from "@/components/empty-state";
 import { toast } from "sonner";
 
 export function AlertsPage() {
@@ -42,6 +43,10 @@ export function AlertsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    console.log('[Alerts] isDialogOpen state changed to:', isDialogOpen);
+  }, [isDialogOpen]);
 
   const loadData = async () => {
     try {
@@ -76,8 +81,7 @@ export function AlertsPage() {
         threshold: parseFloat(formData.threshold),
       });
       toast.success("Alert created successfully");
-      setIsDialogOpen(false);
-      setFormData({ accountId: "", type: "", threshold: "" });
+      handleCloseDialog();
       await loadData();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to create alert");
@@ -85,6 +89,27 @@ export function AlertsPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleOpenDialog = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('[Alerts] handleOpenDialog called');
+    console.log('[Alerts] Current isDialogOpen state:', isDialogOpen);
+    setFormData({ accountId: "", type: "", threshold: "" });
+    // Use a small timeout to ensure the click event has fully processed
+    setTimeout(() => {
+      setIsDialogOpen(true);
+      console.log('[Alerts] setIsDialogOpen(true) called');
+    }, 10);
+  };
+
+  const handleCloseDialog = () => {
+    console.log('[Alerts] handleCloseDialog called');
+    setIsDialogOpen(false);
+    setFormData({ accountId: "", type: "", threshold: "" });
   };
 
   const handleToggleActive = async (alert: Alert) => {
@@ -118,9 +143,22 @@ export function AlertsPage() {
   }
 
   const activeAccounts = accounts.filter(acc => acc.status === 'active');
+  const activeAlerts = alerts.filter(a => a.isActive);
+  const inactiveAlerts = alerts.filter(a => !a.isActive);
+
+  const getAlertTypeLabel = (type: string) => {
+    return type === 'low_balance' ? 'Low Balance' : 'Large Transaction';
+  };
+
+  const getAlertTypeDescription = (type: string) => {
+    return type === 'low_balance' 
+      ? 'Triggers when account balance falls below threshold'
+      : 'Triggers when a transaction exceeds the threshold amount';
+  };
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1>Alerts & Notifications</h1>
@@ -128,7 +166,10 @@ export function AlertsPage() {
         </div>
         <Button 
           className="bg-slate-900 hover:bg-slate-800"
-          onClick={() => setIsDialogOpen(true)}
+          onClick={(e) => {
+            console.log('[Alerts] Button clicked!');
+            handleOpenDialog(e);
+          }}
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Alert
@@ -136,8 +177,15 @@ export function AlertsPage() {
       </div>
 
       {/* Create Alert Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={(open) => {
+          console.log('[Alerts] Dialog onOpenChange called with:', open);
+          console.log('[Alerts] Current isDialogOpen:', isDialogOpen);
+          setIsDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Create New Alert</DialogTitle>
             <DialogDescription>
@@ -145,36 +193,40 @@ export function AlertsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateAlert}>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="alert-account">Account *</Label>
+            <div className="space-y-5 py-6">
+              <div className="space-y-2">
+                <Label htmlFor="alert-account" className="text-sm font-medium">Account *</Label>
                 <Select
                   name="alertAccount"
                   value={formData.accountId}
                   onValueChange={(value) => setFormData({ ...formData, accountId: value })}
                   required
                 >
-                  <SelectTrigger id="alert-account" className="mt-1">
+                  <SelectTrigger id="alert-account" className="bg-input-background border-0 h-10">
                     <SelectValue placeholder="Select account" />
                   </SelectTrigger>
                   <SelectContent>
-                    {activeAccounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.name} - {account.accountNumber}
-                      </SelectItem>
-                    ))}
+                    {activeAccounts.length > 0 ? (
+                      activeAccounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name} - {account.accountNumber}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>No active accounts available</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="alert-type">Alert Type *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="alert-type" className="text-sm font-medium">Alert Type *</Label>
                 <Select
                   name="alertType"
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value })}
                   required
                 >
-                  <SelectTrigger id="alert-type" className="mt-1">
+                  <SelectTrigger id="alert-type" className="bg-input-background border-0 h-10">
                     <SelectValue placeholder="Select alert type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -183,8 +235,8 @@ export function AlertsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="alert-threshold">Threshold ($) *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="alert-threshold" className="text-sm font-medium">Threshold ($) *</Label>
                 <Input
                   id="alert-threshold"
                   name="alertThreshold"
@@ -193,21 +245,21 @@ export function AlertsPage() {
                   value={formData.threshold}
                   onChange={(e) => setFormData({ ...formData, threshold: e.target.value })}
                   placeholder="0.00"
-                  className="mt-1"
+                  className="bg-input-background border-0 h-10"
                   required
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formData.type === 'low_balance' 
-                    ? 'Alert when balance falls below this amount'
-                    : 'Alert when transaction exceeds this amount'}
-                </p>
+                {formData.type && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {getAlertTypeDescription(formData.type)}
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsDialogOpen(false)}
+                onClick={handleCloseDialog}
                 disabled={isSubmitting}
               >
                 Cancel
@@ -220,79 +272,171 @@ export function AlertsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Alerts List */}
-      {alerts.length > 0 ? (
-        <div className="grid gap-4">
-          {alerts.map((alert) => {
-            const account = accounts.find(acc => acc.id === alert.accountId);
-            return (
-              <Card key={alert.id} className="p-6 rounded-xl shadow-sm border border-border">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <AlertCircle className="h-5 w-5 text-[var(--warning)]" />
-                      <h3 className="capitalize">{alert.type.replace('_', ' ')}</h3>
-                      <Badge variant={alert.isActive ? "default" : "outline"}>
-                        {alert.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground mb-4">
-                      {account?.name || alert.accountName} • {account?.accountNumber || alert.accountNumber}
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Threshold</p>
-                        <p className="text-lg font-medium">
-                          ${alert.threshold.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+      {/* Alerts Summary */}
+      {alerts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-4 rounded-xl shadow-sm border border-border">
+            <p className="text-sm text-muted-foreground mb-1">Total Alerts</p>
+            <p className="text-2xl">{alerts.length}</p>
+          </Card>
+          <Card className="p-4 rounded-xl shadow-sm border border-border">
+            <p className="text-sm text-muted-foreground mb-1">Active Alerts</p>
+            <p className="text-2xl text-[var(--positive)]">{activeAlerts.length}</p>
+          </Card>
+          <Card className="p-4 rounded-xl shadow-sm border border-border">
+            <p className="text-sm text-muted-foreground mb-1">Inactive Alerts</p>
+            <p className="text-2xl text-muted-foreground">{inactiveAlerts.length}</p>
+          </Card>
+        </div>
+      )}
+
+      {/* Active Alerts */}
+      {activeAlerts.length > 0 && (
+        <div>
+          <h2 className="mb-4">Active Alerts</h2>
+          <div className="grid gap-4">
+            {activeAlerts.map((alert) => {
+              const account = accounts.find(acc => acc.id === alert.accountId);
+              const isLowBalance = alert.type === 'low_balance';
+              const isTriggered = account && (
+                isLowBalance 
+                  ? account.balance < alert.threshold
+                  : false
+              );
+              
+              return (
+                <Card key={alert.id} className="p-6 rounded-xl shadow-sm border border-border hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <AlertCircle className={`h-5 w-5 ${isTriggered ? 'text-[var(--negative)]' : 'text-[var(--warning)]'}`} />
+                        <h3>{getAlertTypeLabel(alert.type)}</h3>
+                        <Badge className="bg-[var(--positive)] text-white">Active</Badge>
+                        {isTriggered && (
+                          <Badge className="bg-[var(--negative)] text-white">Triggered</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-muted-foreground">
+                          {account?.name || alert.accountName} • {account?.accountNumber || alert.accountNumber}
                         </p>
                       </div>
-                      {account && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div>
-                          <p className="text-sm text-muted-foreground mb-1">Current Balance</p>
+                          <p className="text-sm text-muted-foreground mb-1">Threshold</p>
                           <p className="text-lg font-medium">
-                            ${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            ${alert.threshold.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </p>
                         </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor={`toggle-${alert.id}`} className="text-sm">Active</Label>
-                        <Switch
-                          id={`toggle-${alert.id}`}
-                          checked={alert.isActive}
-                          onCheckedChange={() => handleToggleActive(alert)}
-                        />
+                        {account && (
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">Current Balance</p>
+                            <p className={`text-lg font-medium ${isLowBalance && account.balance < alert.threshold ? 'text-[var(--negative)]' : ''}`}>
+                              ${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor={`toggle-active-${alert.id}`} className="text-sm">Status</Label>
+                          <Switch
+                            id={`toggle-active-${alert.id}`}
+                            checked={alert.isActive}
+                            onCheckedChange={() => handleToggleActive(alert)}
+                          />
+                        </div>
                       </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(alert.id)}
+                      title="Delete alert"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(alert.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
-            );
-          })}
+                </Card>
+              );
+            })}
+          </div>
         </div>
-      ) : (
-        <Card className="p-12 rounded-xl shadow-sm border border-border text-center">
-          <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="mb-2">No alerts yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Create alerts to stay informed about your account activity
-          </p>
-          <Button 
-            className="bg-slate-900 hover:bg-slate-800"
-            onClick={() => setIsDialogOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Alert
-          </Button>
-        </Card>
+      )}
+
+      {/* Inactive Alerts */}
+      {inactiveAlerts.length > 0 && (
+        <div>
+          <h2 className="mb-4">Inactive Alerts</h2>
+          <div className="grid gap-4">
+            {inactiveAlerts.map((alert) => {
+              const account = accounts.find(acc => acc.id === alert.accountId);
+              
+              return (
+                <Card key={alert.id} className="p-6 rounded-xl shadow-sm border border-border opacity-75">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <AlertCircle className="h-5 w-5 text-muted-foreground" />
+                        <h3>{getAlertTypeLabel(alert.type)}</h3>
+                        <Badge variant="outline">Inactive</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-muted-foreground">
+                          {account?.name || alert.accountName} • {account?.accountNumber || alert.accountNumber}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Threshold</p>
+                          <p className="text-lg font-medium">
+                            ${alert.threshold.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        {account && (
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">Current Balance</p>
+                            <p className="text-lg font-medium">
+                              ${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor={`toggle-inactive-${alert.id}`} className="text-sm">Status</Label>
+                          <Switch
+                            id={`toggle-inactive-${alert.id}`}
+                            checked={alert.isActive}
+                            onCheckedChange={() => handleToggleActive(alert)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(alert.id)}
+                      title="Delete alert"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {alerts.length === 0 && (
+        <EmptyState
+          icon={Bell}
+          title="No alerts yet"
+          description="Create alerts to stay informed about your account activity"
+          actionLabel="Create Alert"
+          onAction={handleOpenDialog}
+        />
       )}
     </div>
   );
 }
-
