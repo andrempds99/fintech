@@ -149,6 +149,77 @@ Migrations are stored in `src/database/migrations/` and are applied sequentially
 
 The application uses seeded mock data for development. Run `npm run seed` to populate the database with test data.
 
+### Seed Accounts Information
+
+The seed script creates:
+- **1 admin user** with random email
+- **4 regular users** with random emails
+- **3-4 accounts per user** with random account numbers
+- **Default password for all users:** `password123`
+
+### How to Check Seed Account Usernames and Accounts
+
+#### Method 1: Check Seed Script Output (Recommended)
+
+When you run `npm run seed`, the script automatically displays all credentials and accounts in the console:
+
+```bash
+npm run seed
+```
+
+The output includes:
+- Admin user email and password
+- Regular user emails and password
+- All accounts for each user with account numbers, balances, and status
+
+#### Method 2: Query Database Directly
+
+```bash
+# Connect to PostgreSQL
+psql -U postgres -d fintech_db
+
+# View all users
+SELECT email, name, role FROM users ORDER BY role, email;
+
+# View all accounts with user information
+SELECT 
+  u.email, 
+  u.name as user_name, 
+  a.name as account_name, 
+  a.type, 
+  a.account_number, 
+  a.balance, 
+  a.status
+FROM accounts a
+JOIN users u ON a.user_id = u.id
+ORDER BY u.email, a.name;
+
+# View accounts for a specific user
+SELECT 
+  a.name as account_name, 
+  a.type, 
+  a.account_number, 
+  a.balance, 
+  a.status
+FROM accounts a
+JOIN users u ON a.user_id = u.id
+WHERE u.email = 'user@example.com';
+```
+
+#### Method 3: Use Admin API Endpoints
+
+If logged in as an admin user, you can query via API:
+
+```bash
+# Get all users (requires admin token)
+curl -H "Authorization: Bearer YOUR_ADMIN_TOKEN" http://localhost:3001/api/admin/users
+
+# Get all accounts (requires admin token)
+curl -H "Authorization: Bearer YOUR_ADMIN_TOKEN" http://localhost:3001/api/admin/accounts
+```
+
+**Note:** Since emails are randomly generated, you must check the seed output or query the database to get the actual email addresses.
+
 ## Security
 
 - JWT-based authentication
