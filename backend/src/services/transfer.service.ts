@@ -67,6 +67,11 @@ export class TransferService {
       }
     }
 
+    // Ensure toAccount is defined (TypeScript guard)
+    if (!toAccount) {
+      throw new AppError('Destination account not found', 404);
+    }
+
     // Verify accounts are active
     if (fromAccount.status !== 'active') {
       throw new AppError('Source account is not active', 400);
