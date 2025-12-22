@@ -39,6 +39,8 @@ services:
       - VITE_API_URL=${VITE_API_URL}
     volumes:
       - ../frontend/build:/app/build
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - fintech-network
 
