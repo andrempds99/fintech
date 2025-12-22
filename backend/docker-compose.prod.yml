@@ -7,13 +7,12 @@ services:
       dockerfile: Dockerfile
     container_name: fintech_backend
     restart: unless-stopped
+    network_mode: host
     env_file:
       - .env
-    ports:
-      - "3001:3001"
     environment:
       - NODE_ENV=production
-      - DB_HOST=host.docker.internal
+      - DB_HOST=localhost
       - DB_PORT=5432
       - DB_NAME=fintech_db
       - DB_USER=fintech_user
@@ -25,12 +24,8 @@ services:
       - CORS_ORIGIN=${CORS_ORIGIN}
     volumes:
       - ./logs:/app/logs
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       - frontend
-    networks:
-      - fintech-network
 
   frontend:
     build:
