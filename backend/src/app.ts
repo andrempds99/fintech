@@ -121,7 +121,6 @@ app.post('/api/debug', (req, res) => {
   console.log('DEBUG - Headers:', JSON.stringify(req.headers));
   console.log('DEBUG - Body type:', typeof req.body);
   console.log('DEBUG - Body:', JSON.stringify(req.body));
-  console.log('DEBUG - Raw body available:', !!req.rawBody);
   res.json({
     headers: req.headers,
     body: req.body,
