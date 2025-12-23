@@ -1,6 +1,41 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Use relative URL when served from CloudFront (same domain), otherwise use configured URL
+// CloudFront serves both frontend and API from the same domain, so /api works
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    return envUrl;
+  }
+  
+  // Runtime detection: Check if we're being served from CloudFront or HTTPS
+  // This works even if the frontend was built before this change
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    
+    // If served from CloudFront (cloudfront.net domain) or any HTTPS origin, use relative URL
+    if (hostname.includes('cloudfront.net') || protocol === 'https:') {
+      return '/api';
+    }
+    
+    // If served from EC2 IP directly (HTTP), use the EC2 API URL
+    if (hostname === '15.237.181.208' && protocol === 'http:') {
+      return 'http://15.237.181.208/api';
+    }
+  }
+  
+  // If no VITE_API_URL is set, check if we're in production (CloudFront)
+  // In production, use relative URL since frontend and API are on same domain
+  if (import.meta.env.PROD) {
+    return '/api';
+  }
+  
+  // Development default
+  return 'http://localhost:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -35,7 +70,8 @@ apiClient.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+          // Use apiClient to ensure same base URL and configuration
+          const response = await apiClient.post('/auth/refresh', {
             refreshToken,
           });
 

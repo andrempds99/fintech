@@ -22,6 +22,8 @@ services:
       - PORT=3001
       - FRONTEND_URL=${FRONTEND_URL}
       - CORS_ORIGIN=${CORS_ORIGIN}
+      - CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     volumes:
       - ./logs:/app/logs
     depends_on:

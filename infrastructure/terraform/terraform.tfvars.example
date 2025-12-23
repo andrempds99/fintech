@@ -1,0 +1,53 @@
+# Copy this file to terraform.tfvars and update with your values
+
+# IMPORTANT: AWS region must be us-east-1 for ACM certificates used by CloudFront
+# CloudFront requires SSL certificates to be in us-east-1 region
+aws_region   = "us-east-1"
+environment  = "production"
+project_name = "fintech"
+
+# ============================================================================
+# FREE TIER OPTION (RECOMMENDED): No Domain Required - 100% Free
+# ============================================================================
+# This configuration uses ONLY free AWS services:
+# ✅ CloudFront free tier: 1TB transfer + 10M requests/month (first 12 months)
+# ✅ CloudFront default domain: d1234567890.cloudfront.net (always free)
+# ✅ CloudFront default SSL certificate (always free)
+# ❌ No Route53 costs (queries cost $0.40 per million after free tier)
+# ❌ No ACM certificate costs (not needed with default domain)
+# ❌ No domain registration costs
+#
+# Leave domain_name and route53_zone_id empty to use CloudFront's free domain
+# (e.g., d1234567890.cloudfront.net) with HTTPS support via CloudFront's default certificate
+domain_name = ""
+route53_zone_id = ""
+
+# ============================================================================
+# CUSTOM DOMAIN OPTION: Requires Domain Registration (Additional Costs)
+# ============================================================================
+# ⚠️ This option incurs additional costs:
+# - Domain registration: ~$8-15/year
+# - Route53 hosted zone: First zone free, then $0.50/month per zone
+# - Route53 queries: $0.40 per million queries (after free tier)
+# - ACM certificate: Free, but requires Route53 for validation
+#
+# Uncomment and fill these if you have a custom domain:
+# domain_name = "app.example.com"
+# route53_zone_id = "Z1234567890ABC"
+
+# Additional domains (optional, only used if domain_name is set)
+additional_domains = []
+
+# Origin domain (your EC2 instance)
+origin_domain = "15.237.181.208"
+
+# CloudFront price class
+# PriceClass_200: US/EU only (cheaper, recommended for free tier)
+# PriceClass_100: All edge locations (more expensive)
+# PriceClass_All: Same as PriceClass_100
+price_class = "PriceClass_200" # Recommended for free tier optimization
+
+# WAF Web ACL ID (optional, leave empty if not using WAF)
+# Note: AWS WAF has additional costs ($5/month per web ACL + $1 per million requests)
+waf_web_acl_id = ""
+

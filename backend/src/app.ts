@@ -20,30 +20,77 @@ dotenv.config();
 
 const app: Express = express();
 
-// Security middleware
-app.use(helmet());
+// Security middleware with enhanced configuration
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // Allow embedding if needed
+  })
+);
 
-// CORS configuration
+// CORS configuration - supports CloudFront and multiple origins
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+const cloudfrontDomain = process.env.CLOUDFRONT_DOMAIN || '';
+const corsOrigin = process.env.CORS_ORIGIN || '';
+const additionalOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : [];
+
+// Build allowed origins list
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   frontendUrl,
-].filter((url, index, self) => self.indexOf(url) === index); // Remove duplicates
+  cloudfrontDomain,
+  corsOrigin,
+  ...additionalOrigins,
+]
+  .filter(url => url && url !== '') // Remove empty strings
+  .filter((url, index, self) => self.indexOf(url) === index); // Remove duplicates
+
+// Log allowed origins in development
+if (process.env.NODE_ENV !== 'production') {
+  logger.info('CORS Allowed Origins:', { origins: allowedOrigins });
+}
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin) {
+        return callback(null, true);
+      }
       
-      if (allowedOrigins.includes(origin)) {
+      // Check if origin matches allowed list (exact match or starts with)
+      const isAllowed = allowedOrigins.some(allowed => {
+        // Exact match
+        if (origin === allowed) return true;
+        // Match if origin starts with allowed (for CloudFront subdomains)
+        if (allowed && origin.startsWith(allowed)) return true;
+        return false;
+      });
+      
+      if (isAllowed) {
         callback(null, true);
       } else {
+        // In development, log rejected origins for debugging
+        if (process.env.NODE_ENV !== 'production') {
+          logger.warn('CORS blocked origin:', { origin, allowedOrigins });
+        }
         callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page'],
   })
 );
 
