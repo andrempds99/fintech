@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import userService from '../services/user.service';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../auth/jwt';
 import { AppError } from '../middleware/error.middleware';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '../database/seed';
 
 export class AuthController {
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -124,6 +125,23 @@ export class AuthController {
       
       res.json({
         message: 'Password reset functionality requires token verification system',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Public endpoint to get demo accounts for testing
+  async getDemoAccounts(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({
+        message: 'Demo accounts for testing',
+        password: DEMO_PASSWORD,
+        accounts: DEMO_ACCOUNTS.map(acc => ({
+          email: acc.email,
+          name: acc.name,
+          role: acc.role,
+        })),
       });
     } catch (error) {
       next(error);

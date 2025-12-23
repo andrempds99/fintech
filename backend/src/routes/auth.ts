@@ -47,5 +47,8 @@ router.post(
   authController.resetPassword.bind(authController)
 );
 
+// Public endpoint to get demo accounts (no authentication required)
+router.get('/demo-accounts', authController.getDemoAccounts.bind(authController));
+
 export default router;
 

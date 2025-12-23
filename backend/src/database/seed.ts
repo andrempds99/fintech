@@ -1,10 +1,19 @@
 import pool from './connection';
 import { hashPassword } from '../auth/password';
 import {
-  generateUser,
   generateAccount,
   generateTransactionsForAccount,
 } from '../mock/generators';
+
+// Fixed demo accounts for consistent credentials
+export const DEMO_ACCOUNTS = [
+  { email: 'admin@fintech.demo', name: 'Admin User', role: 'admin' as const, avatar: 'AU' },
+  { email: 'john.doe@fintech.demo', name: 'John Doe', role: 'user' as const, avatar: 'JD' },
+  { email: 'jane.smith@fintech.demo', name: 'Jane Smith', role: 'user' as const, avatar: 'JS' },
+  { email: 'demo@fintech.demo', name: 'Demo User', role: 'user' as const, avatar: 'DU' },
+];
+
+export const DEMO_PASSWORD = 'password123';
 
 async function seedDatabase() {
   const client = await pool.connect();
@@ -26,60 +35,39 @@ async function seedDatabase() {
 
     console.log('Cleared existing data');
 
-    // Create admin user
-    const adminUser = await generateUser('admin');
-    const adminResult = await client.query(
-      `INSERT INTO users (email, password_hash, name, role, avatar)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (email) DO UPDATE SET
-         password_hash = EXCLUDED.password_hash,
-         name = EXCLUDED.name,
-         role = EXCLUDED.role,
-         avatar = EXCLUDED.avatar
-       RETURNING id, email, name, role, avatar`,
-      [adminUser.email, adminUser.passwordHash, adminUser.name, adminUser.role, adminUser.avatar]
-    );
-    const adminId = adminResult.rows[0].id;
-    console.log(`Created admin user: ${adminUser.email} (password: password123)`);
-
-    // Create regular users
+    // Create fixed demo users
+    const passwordHash = await hashPassword(DEMO_PASSWORD);
     const users = [];
-    const usedEmails = new Set<string>();
-    usedEmails.add(adminUser.email); // Track admin email to avoid duplicates
-    
-    for (let i = 0; i < 4; i++) {
-      let user;
-      let attempts = 0;
-      // Generate unique email (retry if duplicate)
-      do {
-        user = await generateUser('user');
-        attempts++;
-        if (attempts > 10) {
-          // Fallback: add timestamp to ensure uniqueness
-          const timestamp = Date.now();
-          user.email = user.email.replace('@', `+${timestamp}@`);
-        }
-      } while (usedEmails.has(user.email) && attempts <= 10);
-      
-      usedEmails.add(user.email);
-      
+    let adminId: string | null = null;
+
+    for (const demoUser of DEMO_ACCOUNTS) {
       const result = await client.query(
         `INSERT INTO users (email, password_hash, name, role, avatar)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (email) DO NOTHING
+         ON CONFLICT (email) DO UPDATE SET
+           password_hash = EXCLUDED.password_hash,
+           name = EXCLUDED.name,
+           role = EXCLUDED.role,
+           avatar = EXCLUDED.avatar
          RETURNING id, email, name, role, avatar`,
-        [user.email, user.passwordHash, user.name, user.role, user.avatar]
+        [demoUser.email, passwordHash, demoUser.name, demoUser.role, demoUser.avatar]
       );
       
-      if (result.rows.length > 0) {
-        users.push({ ...result.rows[0], password: 'password123' });
+      const user = result.rows[0];
+      users.push({ ...user, password: DEMO_PASSWORD });
+      
+      if (demoUser.role === 'admin') {
+        adminId = user.id;
       }
+      
+      console.log(`Created ${demoUser.role} user: ${demoUser.email} (password: ${DEMO_PASSWORD})`);
     }
-    console.log(`Created ${users.length} regular users`);
+
+    console.log(`Created ${users.length} demo users`);
 
     // Create accounts for each user
     const allAccounts = [];
-    for (const user of [adminResult.rows[0], ...users]) {
+    for (const user of users) {
       const accountCount = Math.floor(Math.random() * 2) + 3; // 3-4 accounts per user
       for (let i = 0; i < accountCount; i++) {
         const accountData = generateAccount(user.id, i);
@@ -172,7 +160,7 @@ async function seedDatabase() {
 
     let totalGoals = 0;
     // Create goals for admin and first regular user
-    for (const user of [adminResult.rows[0], ...users.slice(0, 1)]) {
+    for (const user of users.slice(0, 2)) {
       for (const goalData of mockGoals) {
         await client.query(
           `INSERT INTO goals (user_id, name, target_amount, current_amount, category, status)
@@ -218,9 +206,11 @@ async function seedDatabase() {
 
     await client.query('COMMIT');
     console.log('Database seeded successfully!');
-    console.log('\nDemo credentials:');
-    console.log(`Admin: ${adminUser.email} / password123`);
-    console.log(`Users: ${users.map(u => u.email).join(', ')} / password123`);
+    console.log('\n=== Demo Credentials ===');
+    console.log(`Password for all accounts: ${DEMO_PASSWORD}`);
+    DEMO_ACCOUNTS.forEach(acc => {
+      console.log(`  ${acc.role.toUpperCase()}: ${acc.email}`);
+    });
     
     // Fetch updated accounts with final balances after transactions
     const updatedAccountsResult = await client.query(
@@ -234,28 +224,16 @@ async function seedDatabase() {
     // Display accounts for each user
     console.log('\n=== User Accounts ===');
     
-    // Get admin accounts
-    const adminAccounts = updatedAccounts.filter(acc => acc.user_id === adminId);
-    console.log(`\nAdmin (${adminUser.email}):`);
-    adminAccounts.forEach((account, index) => {
-      const balance = parseFloat(account.balance).toFixed(2);
-      const status = account.status === 'active' ? '✓' : account.status;
-      console.log(`  ${index + 1}. ${account.name} (${account.type}) - ${account.account_number} - Balance: $${balance} [${status}]`);
-    });
-    
-    // Get accounts for each regular user
-    const userEmails = [...new Set(users.map(u => u.email))];
-    for (const email of userEmails) {
-      const user = users.find(u => u.email === email);
-      if (user) {
-        const userAccounts = updatedAccounts.filter(acc => acc.user_id === user.id);
-        console.log(`\nUser (${email}):`);
-        userAccounts.forEach((account, index) => {
-          const balance = parseFloat(account.balance).toFixed(2);
-          const status = account.status === 'active' ? '✓' : account.status;
-          console.log(`  ${index + 1}. ${account.name} (${account.type}) - ${account.account_number} - Balance: $${balance} [${status}]`);
-        });
-      }
+    // Get accounts for each user
+    for (const user of users) {
+      const userAccounts = updatedAccounts.filter(acc => acc.user_id === user.id);
+      const roleTag = user.role === 'admin' ? '[ADMIN]' : '[USER]';
+      console.log(`\n${roleTag} ${user.email}:`);
+      userAccounts.forEach((account, index) => {
+        const balance = parseFloat(account.balance).toFixed(2);
+        const status = account.status === 'active' ? '✓' : account.status;
+        console.log(`  ${index + 1}. ${account.name} (${account.type}) - ${account.account_number} - Balance: $${balance} [${status}]`);
+      });
     }
     
     console.log('\n=== Transfer Testing ===');
