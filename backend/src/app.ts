@@ -116,20 +116,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Debug endpoint to check raw request
-app.post('/api/debug', (req, res) => {
-  console.log('DEBUG - Headers:', JSON.stringify(req.headers));
-  console.log('DEBUG - Body type:', typeof req.body);
-  console.log('DEBUG - Body:', JSON.stringify(req.body));
-  res.json({
-    headers: req.headers,
-    body: req.body,
-    bodyType: typeof req.body,
-    contentType: req.headers['content-type'],
-    contentLength: req.headers['content-length'],
-  });
-});
-
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
