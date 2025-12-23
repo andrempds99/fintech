@@ -1,7 +1,7 @@
 # PowerShell script to check EC2 instance status
 # This helps diagnose connection issues
 
-$EC2_IP = "15.237.142.105"
+$EC2_IP = "51.44.222.179"
 $KEY_PATH = "C:\Users\andre\Downloads\fintech-key.pem"
 
 Write-Host "=== EC2 Connection Diagnostic ===" -ForegroundColor Cyan

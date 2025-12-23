@@ -20,7 +20,7 @@ const getApiBaseUrl = () => {
     }
     
     // If served from EC2 IP directly (HTTP), use the EC2 API URL
-    if (hostname === '15.237.142.105' && protocol === 'http:') {
+    if (hostname === '51.44.222.179' && protocol === 'http:') {
       return `http://${hostname}/api`;
     }
   }

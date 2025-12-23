@@ -2,7 +2,7 @@
 # Bash script to check seed accounts on EC2 instance
 # Usage: ./check-ec2-seed-accounts.sh
 
-EC2_IP="15.237.142.105"
+EC2_IP="51.44.222.179"
 KEY_PATH="$HOME/Downloads/fintech-key.pem"
 
 echo "=== Checking Seed Accounts on EC2 ==="

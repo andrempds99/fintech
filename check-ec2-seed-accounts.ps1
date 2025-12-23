@@ -1,7 +1,7 @@
 # PowerShell script to check seed accounts on EC2 instance
 # Usage: .\check-ec2-seed-accounts.ps1
 
-$EC2_IP = "15.237.142.105"
+$EC2_IP = "51.44.222.179"
 $KEY_PATH = "C:\Users\andre\Downloads\fintech-key.pem"
 
 Write-Host "=== Checking Seed Accounts on EC2 ===" -ForegroundColor Cyan
