@@ -51,6 +51,40 @@ FinTech Dashboard is a comprehensive personal finance management application tha
 | `jane.smith@fintech.demo` | Jane Smith | user | `password123` |
 | `demo@fintech.demo` | Demo User | user | `password123` |
 
+## 🏦 Users & Bank Accounts
+
+### 👤 Admin User (`admin@fintech.demo`)
+| Account Name | Type | Account Number | Balance | Status |
+|--------------|------|----------------|---------|--------|
+| Premium Checking | Checking | ****7486 | $28,291.22 | ✅ Active |
+| Savings Plus | Savings | ****2035 | $1,325.80 | ✅ Active |
+| Investment Portfolio | Investment | ****3359 | $2,687.23 | ✅ Active |
+
+### 👤 John Doe (`john.doe@fintech.demo`)
+| Account Name | Type | Account Number | Balance | Status |
+|--------------|------|----------------|---------|--------|
+| Premium Checking | Checking | ****5271 | $93,517.14 | ❌ Closed |
+| Savings Plus | Savings | ****2132 | $6,516.96 | ✅ Active |
+| Investment Portfolio | Investment | ****8571 | $0.00 | ✅ Active |
+| Business Account | Business | ****7823 | $52,452.10 | ❌ Closed |
+
+### 👤 Jane Smith (`jane.smith@fintech.demo`)
+| Account Name | Type | Account Number | Balance | Status |
+|--------------|------|----------------|---------|--------|
+| Premium Checking | Checking | ****2985 | $45,841.06 | ❌ Closed |
+| Savings Plus | Savings | ****4555 | $25,145.70 | ❌ Closed |
+| Investment Portfolio | Investment | ****3112 | $5,498.06 | ✅ Active |
+
+### 👤 Demo User (`demo@fintech.demo`)
+| Account Name | Type | Account Number | Balance | Status |
+|--------------|------|----------------|---------|--------|
+| Premium Checking | Checking | ****1056 | $736.10 | ✅ Active |
+| Savings Plus | Savings | ****1557 | $14,886.11 | ✅ Active |
+| Investment Portfolio | Investment | ****3958 | $22,409.53 | ❌ Closed |
+| Business Account | Business | ****9077 | $46,361.00 | ❌ Closed |
+
+> **Note:** Run `.\get-users-accounts.ps1` to fetch the latest account data from the live API.
+
 ## 🏗️ Architecture
 
 ```
